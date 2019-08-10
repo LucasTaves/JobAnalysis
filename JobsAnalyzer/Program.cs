@@ -331,8 +331,7 @@ namespace JobsAnalyzer
             return new SqlConnectionStringBuilder
             {
                 DataSource = dataSource,
-
-                // InitialCatalog = catalog,
+                InitialCatalog = catalog,
                 UserID = userName,
                 Password = userPassword
             }.ConnectionString;

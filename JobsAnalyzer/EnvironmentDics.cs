@@ -171,7 +171,7 @@ internal static class EnvironmentDics
                 "ResponseTek_NONPROD_EU.cons.com",
                 "urt_eu2_RT",
                 "urt_eu2_faster",
-                "P@ssw0rd+,RT"
+                "P@ssw0rdRT+,"
             }
         },
         {
@@ -180,7 +180,7 @@ internal static class EnvironmentDics
                 "ResponseTek_NONPROD_EU.cons.com",
                 "urt_eu3_RT",
                 "urt_eu3_faster",
-                "P@ssw0rd+,RT"
+                "P@ssw0rdRT+,"
             }
         },
         {
@@ -189,7 +189,7 @@ internal static class EnvironmentDics
                 "ResponseTek_NONPROD_EU.cons.com",
                 "urt_eu5_RT",
                 "urt_eu5_faster",
-                "P@ssw0rd+,RT"
+                "P@ssw0rdRT+,"
             }
         },
         {
@@ -198,16 +198,16 @@ internal static class EnvironmentDics
                 "ResponseTek_NONPROD_EU.cons.com",
                 "urt_na3_RT",
                 "urt_na3_faster",
-                "P@ssw0rd+,RT"
+                "P@ssw0rdRT+,"
             }
         },
         {
             "NA6", new List<string>
             {
                 "ResponseTek_NONPROD_EU.cons.com",
-                "urt_na6_RT",
-                "urt_na6_qa",
-                "P@ssw0rd+,RT"
+                "urt_eu5_RT", // "urt_na6_RT",
+                "urt_eu5_faster", // "urt_na6_qa",
+                "P@ssw0rdRT+," // P@ssw0rd+,RT
             }
         },
         {
@@ -216,7 +216,7 @@ internal static class EnvironmentDics
                 "ResponseTek_NONPROD_EU.cons.com",
                 "urt_zain_RT",
                 "urt_zain_faster",
-                "P@ssw0rd+,RT"
+                "P@ssw0rdRT+,"
             }
         },
         {
