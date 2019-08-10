@@ -7,18 +7,17 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.SqlServer.Management.Smo.Agent;
 using Microsoft.Win32.TaskScheduler;
+using MoreLinq;
 using MoreLinq.Extensions;
 using SQLServerJobUtility;
-using MoreEnumerable = MoreLinq.MoreEnumerable;
 using Task = System.Threading.Tasks.Task;
 
 namespace JobsAnalyzer
 {
     internal class Program
     {
-        //full file path in 2 groups
-        //((?:[\w]\:|\\|\\\\)(?:\\[\w\-\s\d\*\%\.]+\\*)+)((?:[\w\-\s\d\*\%\.]+)+(?:\.[\w\d]+)+)
-
+        // full file path in 2 groups
+        // ((?:[\w]\:|\\|\\\\)(?:\\[\w\-\s\d\*\%\.]+\\*)+)((?:[\w\-\s\d\*\%\.]+)+(?:\.[\w\d]+)+)
         private static readonly string separator = "-;;-";
         private static readonly Regex fileNameRegex = new Regex(
             @"((?:[\w]\:|\\|\\\\)?(?:\\[\w\-\s\d\*\%\.]+)+)\\((?:[\w\-\s\d\*\%\.]+)+(?:\.[\w\d]+)+)",
@@ -29,29 +28,6 @@ namespace JobsAnalyzer
         private static readonly Regex keyValuePairRegex = new Regex(
             @"(?<Key>[^=;]+)=(?<Val>[^;]+)",
             RegexOptions.Multiline);
-
-        private static readonly Dictionary<string, List<string>> taskClientsByEnvironment =
-            new Dictionary<string, List<string>>
-            {
-                {
-                    "NA6", new List<string>
-                    {
-                        "CAASCO"
-                    }
-                }
-            };
-
-        private static readonly Dictionary<int, string> environmentById = new Dictionary<int, string>
-        {
-            { 1, "EU1" },
-            { 2, "EU2" },
-            { 3, "EU3" },
-            { 4, "EU5" },
-            { 5, "NA3" },
-            { 6, "NA6" },
-            { 7, "SG1" },
-            { 8, "ZAIN" }
-        };
 
         private static async Task Main(string[] args)
         {
@@ -71,34 +47,34 @@ namespace JobsAnalyzer
                     break;
             }
 
-            //parameters.Get("Press enter to finish...");
+            // parameters.Get("Press enter to finish...");
 
-            //var folderName = args.Length > 0
-            //? args[0]
-            //: parameters.Get("Please type folder name: ");
+            // var folderName = args.Length > 0
+            // ? args[0]
+            // : parameters.Get("Please type folder name: ");
 
-            //var batFiles = Directory.EnumerateFiles(folderName, "*.bat").ToList();
+            // var batFiles = Directory.EnumerateFiles(folderName, "*.bat").ToList();
 
-            //var fileNameRegex = new Regex(@"^(?:[A-Za-z]\:|\\)(\\[a-zA-Z_\-\s0-9\.]+)+\.*$", RegexOptions.Multiline);
-            //var connectionStringRegex = new Regex(@"(?<Key>[^=;]+)=(?<Val>[^;]+)", RegexOptions.Multiline);
+            // var fileNameRegex = new Regex(@"^(?:[A-Za-z]\:|\\)(\\[a-zA-Z_\-\s0-9\.]+)+\.*$", RegexOptions.Multiline);
+            // var connectionStringRegex = new Regex(@"(?<Key>[^=;]+)=(?<Val>[^;]+)", RegexOptions.Multiline);
 
-            //batFiles.ForEach(
-            //fileName =>
-            //{
-            //    var fileText = File.ReadAllText(fileName);
+            // batFiles.ForEach(
+            // fileName =>
+            // {
+            // var fileText = File.ReadAllText(fileName);
 
-            //    var allFiles = fileNameRegex.Matches(fileText).ToList();
-            //    var allConnectionStrings = connectionStringRegex.Matches(fileText).ToList();
+            // var allFiles = fileNameRegex.Matches(fileText).ToList();
+            // var allConnectionStrings = connectionStringRegex.Matches(fileText).ToList();
 
-            //    using (var streamWriter = File.AppendText("E:\\OneDrive\\Desktop\\Test.txt"))
-            //    {
-            //        streamWriter.WriteLine("Files:");
-            //        allFiles.ForEach(match => streamWriter.WriteLine(match.Value));
+            // using (var streamWriter = File.AppendText("E:\\OneDrive\\Desktop\\Test.txt"))
+            // {
+            // streamWriter.WriteLine("Files:");
+            // allFiles.ForEach(match => streamWriter.WriteLine(match.Value));
 
-            //        streamWriter.WriteLine("Connection Strings:");
-            //        allConnectionStrings.ForEach(match => streamWriter.WriteLine(match.Value));
-            //    }
-            //});
+            // streamWriter.WriteLine("Connection Strings:");
+            // allConnectionStrings.ForEach(match => streamWriter.WriteLine(match.Value));
+            // }
+            // });
         }
 
         private static void AnalyzeTasks(Parameters parameters)
@@ -106,13 +82,15 @@ namespace JobsAnalyzer
             var foundFilesByTask = new Dictionary<Microsoft.Win32.TaskScheduler.Task, List<string>>();
 
             Console.WriteLine("Please chose your environment: ");
-            MoreEnumerable.ForEach(environmentById, pair => Console.WriteLine($"[{pair.Key}] = {pair.Value}"));
+            MoreEnumerable.ForEach(
+                EnvironmentDics.EnvironmentById,
+                pair => Console.WriteLine($"[{pair.Key}] = {pair.Value}"));
             var env = parameters.Get(string.Empty);
             var envId = int.Parse(env);
 
             Console.WriteLine("Fetching all environment tasks: ");
             var environmentTasks = TaskService.Instance.AllTasks.Where(
-                task => taskClientsByEnvironment[environmentById[envId]]
+                task => EnvironmentDics.TaskClientsByEnvironment[EnvironmentDics.EnvironmentById[envId]]
                     .Any(taskName => task.Name.IndexOf(taskName, StringComparison.OrdinalIgnoreCase) >= 0));
 
             Console.WriteLine("Writing all tasks to file: ");
@@ -188,10 +166,11 @@ namespace JobsAnalyzer
             Dictionary<Microsoft.Win32.TaskScheduler.Task, List<string>> foundFilesByTask)
         {
             var stringBuilder = new StringBuilder();
-            
+
             Console.WriteLine("Analyzing files referenced by tasks");
 
-            foundFilesByTask.ForEach(
+            ForEachExtension.ForEach(
+                foundFilesByTask,
                 pair =>
                 {
                     var task = pair.Key;
@@ -203,7 +182,10 @@ namespace JobsAnalyzer
             File.WriteAllText("TasksFiles.txt", stringBuilder.ToString());
         }
 
-        private static void AnalyzeFileForTask(List<string> filePaths, StringBuilder stringBuilder, Microsoft.Win32.TaskScheduler.Task task)
+        private static void AnalyzeFileForTask(
+            List<string> filePaths,
+            StringBuilder stringBuilder,
+            Microsoft.Win32.TaskScheduler.Task task)
         {
             var localFiles = new List<string>();
 
@@ -212,10 +194,7 @@ namespace JobsAnalyzer
                 {
                     var fileContent = File.ReadAllText(filePath);
 
-                    var files = fileNameRegex.Matches(fileContent)
-                        .Cast<Match>()
-                        .Select(match => match.Value)
-                        .ToList();
+                    var files = fileNameRegex.Matches(fileContent).Cast<Match>().Select(match => match.Value).ToList();
                     files.ForEach(
                         file =>
                         {
@@ -237,10 +216,7 @@ namespace JobsAnalyzer
                             }
                         });
 
-                    var paths = pathRegex.Matches(fileContent)
-                        .Cast<Match>()
-                        .Select(match => match.Value)
-                        .ToList();
+                    var paths = pathRegex.Matches(fileContent).Cast<Match>().Select(match => match.Value).ToList();
                     paths.ForEach(
                         path =>
                         {
@@ -252,9 +228,7 @@ namespace JobsAnalyzer
                             }
                         });
 
-                    var assignments = keyValuePairRegex.Matches(fileContent)
-                        .Cast<Match>()
-                        .ToList();
+                    var assignments = keyValuePairRegex.Matches(fileContent).Cast<Match>().ToList();
                     assignments.ForEach(
                         match =>
                         {
@@ -265,6 +239,12 @@ namespace JobsAnalyzer
                             {
                                 stringBuilder.AppendLine(
                                     $"{task.Name}{separator}{filePath}{separator}Possible Catalog assignment: {key} = {value}");
+                            }
+
+                            if (key.IndexOf("server", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                stringBuilder.AppendLine(
+                                    $"{task.Name}{separator}{filePath}{separator}Possible Server assignment: {key} = {value}");
                             }
                         });
                 });
@@ -279,10 +259,19 @@ namespace JobsAnalyzer
         {
             var foundFilesByJob = new Dictionary<Job, List<string>>();
 
-            var address = parameters.Get("Please provide the DB Address: ");
-            var catalog = parameters.Get("Please provide the DB Catalog: ");
-            var user = parameters.Get("Please provide the DB User: ");
-            var password = parameters.Get("Please provide the DB Password: ");
+            Console.WriteLine("Please chose your environment: ");
+            MoreEnumerable.ForEach(
+                EnvironmentDics.EnvironmentById,
+                pair => Console.WriteLine($"[{pair.Key}] = {pair.Value}"));
+            var env = parameters.Get(string.Empty);
+            var envId = int.Parse(env);
+
+            var connectionDetails = EnvironmentDics.DbCredentialsByEnv[EnvironmentDics.EnvironmentById[envId]];
+
+            var address = connectionDetails[0];
+            var catalog = connectionDetails[1];
+            var user = connectionDetails[2];
+            var password = connectionDetails[3];
 
             var connectionString = BuildConnectionString(address, catalog, user, password);
             var sqlJob = new JobUtility();
@@ -310,11 +299,19 @@ namespace JobsAnalyzer
                             step =>
                             {
                                 var files = fileNameRegex.Matches(step.Command).Cast<Match>().ToList();
-                                var connectionStrings =
-                                    keyValuePairRegex.Matches(step.Command).Cast<Match>().ToList();
+                                var paths = pathRegex.Matches(step.Command).Cast<Match>().ToList();
+                                var connectionStrings = keyValuePairRegex.Matches(step.Command).Cast<Match>().ToList();
                                 files.ForEach(match => stringBuilder.Append($"{separator}{match.Value}"));
-
-                                // connectionStrings.ForEach(match => stringBuilder.Append($",{match.Value}"));
+                                paths.ForEach(match => stringBuilder.Append($"{separator}{match.Value}"));
+                                connectionStrings.ForEach(
+                                    match =>
+                                    {
+                                        if (match.Groups["Key"].Value.IndexOf("server", StringComparison.OrdinalIgnoreCase) >= 0
+                                            || match.Groups["Key"] .Value.IndexOf("catalog", StringComparison.OrdinalIgnoreCase) >= 0)
+                                        {
+                                            stringBuilder.Append($",{match.Value} possible database assignment");
+                                        }
+                                    });
                             });
                         stringBuilder.AppendLine();
                     });
