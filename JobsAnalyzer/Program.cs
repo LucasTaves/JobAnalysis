@@ -258,19 +258,13 @@ namespace JobsAnalyzer
                     assignments.ForEach(
                         match =>
                         {
-                            var key = match.Groups[0];
-                            var value = match.Groups[1];
+                            var key = match.Groups[0].Value;
+                            var value = match.Groups[1].Value;
 
-                            if (key.Value.IndexOf("catalog", StringComparison.OrdinalIgnoreCase) >= 0)
+                            if (key.IndexOf("catalog", StringComparison.OrdinalIgnoreCase) >= 0)
                             {
                                 stringBuilder.AppendLine(
                                     $"{task.Name}{separator}{filePath}{separator}Possible Catalog assignment: {key} = {value}");
-                            }
-
-                            if (key.Value.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0)
-                            {
-                                stringBuilder.AppendLine(
-                                    $"{task.Name}{separator}{filePath}{separator}Possible Source (DB) assignment: {key} = {value}");
                             }
                         });
                 });
