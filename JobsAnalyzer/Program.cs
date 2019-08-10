@@ -266,7 +266,8 @@ namespace JobsAnalyzer
             var env = parameters.Get(string.Empty);
             var envId = int.Parse(env);
 
-            var connectionDetails = EnvironmentDics.DbCredentialsByEnv[EnvironmentDics.EnvironmentById[envId]];
+            var key = EnvironmentDics.EnvironmentById[envId];
+            var connectionDetails = EnvironmentDics.DbCredentialsByEnv[key];
 
             var address = connectionDetails[0];
             var catalog = connectionDetails[1];
@@ -283,6 +284,7 @@ namespace JobsAnalyzer
 
             sqlJob.GetAllJobs()
                 .Cast<Job>()
+                .Where(job => job.Name.IndexOf(key, StringComparison.OrdinalIgnoreCase) >= 0)
                 .ToList()
                 .ForEach(
                     job =>
