@@ -275,7 +275,10 @@ namespace JobsAnalyzer
                         });
                 });
 
-            AnalyzeFileForTask(localFiles, stringBuilder, task);
+            if (localFiles.Any())
+            {
+                AnalyzeFileForTask(localFiles, stringBuilder, task);
+            }
         }
 
         private static void AnalyzeDbJobs(Parameters parameters)
