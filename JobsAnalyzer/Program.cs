@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.SqlServer.Management.Smo.Agent;
 using Microsoft.Win32.TaskScheduler;
+using MoreLinq.Extensions;
 using SQLServerJobUtility;
 using MoreEnumerable = MoreLinq.MoreEnumerable;
 using Task = System.Threading.Tasks.Task;
@@ -15,11 +16,17 @@ namespace JobsAnalyzer
 {
     internal class Program
     {
+        //full file path in 2 groups
+        //((?:[\w]\:|\\|\\\\)(?:\\[\w\-\s\d\*\%\.]+\\*)+)((?:[\w\-\s\d\*\%\.]+)+(?:\.[\w\d]+)+)
+
         private static readonly string separator = "-;;-";
         private static readonly Regex fileNameRegex = new Regex(
-            @"(?:[A-Za-z]\:|\\)(\\[a-zA-Z_\-\s0-9\.]+)+\.*$",
+            @"((?:[\w]\:|\\|\\\\)?(?:\\[\w\-\s\d\*\%\.]+)+)\\((?:[\w\-\s\d\*\%\.]+)+(?:\.[\w\d]+)+)",
             RegexOptions.Multiline);
-        private static readonly Regex connectionStringRegex = new Regex(
+        private static readonly Regex pathRegex = new Regex(
+            @"(([a-z]|[A-Z]):(?=\\(?![\0-\37<>:""/\\|?*])|\/(?![\0-\37<>:""/\\|?*])|$)|^\\(?=[\\\/][^\0-\37<>:""/\\|?*]+)|^(?=(\\|\/)$)|^\.(?=(\\|\/)$)|^\.\.(?=(\\|\/)$)|^(?=(\\|\/)[^\0-\37<>:""/\\|?*]+)|^\.(?=(\\|\/)[^\0-\37<>:""/\\|?*]+)|^\.\.(?=(\\|\/)[^\0-\37<>:""/\\|?*]+))((\\|\/)[^\0-\37<>:""/\\|?*]+|(\\|\/)$)*()",
+            RegexOptions.Multiline);
+        private static readonly Regex keyValuePairRegex = new Regex(
             @"(?<Key>[^=;]+)=(?<Val>[^;]+)",
             RegexOptions.Multiline);
 
@@ -64,34 +71,34 @@ namespace JobsAnalyzer
                     break;
             }
 
-            parameters.Get("Press enter to finish...");
+            //parameters.Get("Press enter to finish...");
 
-            // var folderName = args.Length > 0
-            // ? args[0]
-            // : parameters.Get("Please type folder name: ");
+            //var folderName = args.Length > 0
+            //? args[0]
+            //: parameters.Get("Please type folder name: ");
 
-            // var batFiles = Directory.EnumerateFiles(folderName, "*.bat").ToList();
+            //var batFiles = Directory.EnumerateFiles(folderName, "*.bat").ToList();
 
-            // var fileNameRegex = new Regex(@"^(?:[A-Za-z]\:|\\)(\\[a-zA-Z_\-\s0-9\.]+)+\.*$", RegexOptions.Multiline);
-            // var connectionStringRegex = new Regex(@"(?<Key>[^=;]+)=(?<Val>[^;]+)", RegexOptions.Multiline);
+            //var fileNameRegex = new Regex(@"^(?:[A-Za-z]\:|\\)(\\[a-zA-Z_\-\s0-9\.]+)+\.*$", RegexOptions.Multiline);
+            //var connectionStringRegex = new Regex(@"(?<Key>[^=;]+)=(?<Val>[^;]+)", RegexOptions.Multiline);
 
-            // batFiles.ForEach(
-            // fileName =>
-            // {
-            // var fileText = File.ReadAllText(fileName);
+            //batFiles.ForEach(
+            //fileName =>
+            //{
+            //    var fileText = File.ReadAllText(fileName);
 
-            // var allFiles = fileNameRegex.Matches(fileText).ToList();
-            // var allConnectionStrings = connectionStringRegex.Matches(fileText).ToList();
+            //    var allFiles = fileNameRegex.Matches(fileText).ToList();
+            //    var allConnectionStrings = connectionStringRegex.Matches(fileText).ToList();
 
-            // using (var streamWriter = File.AppendText("E:\\OneDrive\\Desktop\\Test.txt"))
-            // {
-            // streamWriter.WriteLine("Files:");
-            // allFiles.ForEach(match => streamWriter.WriteLine(match.Value));
+            //    using (var streamWriter = File.AppendText("E:\\OneDrive\\Desktop\\Test.txt"))
+            //    {
+            //        streamWriter.WriteLine("Files:");
+            //        allFiles.ForEach(match => streamWriter.WriteLine(match.Value));
 
-            // streamWriter.WriteLine("Connection Strings:");
-            // allConnectionStrings.ForEach(match => streamWriter.WriteLine(match.Value));
-            // }
-            // });
+            //        streamWriter.WriteLine("Connection Strings:");
+            //        allConnectionStrings.ForEach(match => streamWriter.WriteLine(match.Value));
+            //    }
+            //});
         }
 
         private static void AnalyzeTasks(Parameters parameters)
@@ -181,39 +188,94 @@ namespace JobsAnalyzer
             Dictionary<Microsoft.Win32.TaskScheduler.Task, List<string>> foundFilesByTask)
         {
             var stringBuilder = new StringBuilder();
-
+            
             Console.WriteLine("Analyzing files referenced by tasks");
 
-            MoreEnumerable.ForEach(
-                foundFilesByTask,
+            foundFilesByTask.ForEach(
                 pair =>
                 {
                     var task = pair.Key;
                     var filePaths = pair.Value;
 
-                    filePaths.ForEach(
-                        filePath =>
-                        {
-                            var fileContent = File.ReadAllText(filePath);
-
-                            var files = fileNameRegex.Matches(fileContent)
-                                .Cast<Match>()
-                                .Select(match => match.Value)
-                                .ToList();
-                            files.ForEach(
-                                file =>
-                                {
-                                    if(!File.Exists(file) && !Directory.Exists(file))
-                                    {
-                                        stringBuilder.AppendLine(
-                                            $"{task.Name}{separator}{filePath}{separator}{file} does not exist");
-                                    }
-                                    
-                                });
-                        });
+                    AnalyzeFileForTask(filePaths, stringBuilder, task);
                 });
 
             File.WriteAllText("TasksFiles.txt", stringBuilder.ToString());
+        }
+
+        private static void AnalyzeFileForTask(List<string> filePaths, StringBuilder stringBuilder, Microsoft.Win32.TaskScheduler.Task task)
+        {
+            var localFiles = new List<string>();
+
+            filePaths.ForEach(
+                filePath =>
+                {
+                    var fileContent = File.ReadAllText(filePath);
+
+                    var files = fileNameRegex.Matches(fileContent)
+                        .Cast<Match>()
+                        .Select(match => match.Value)
+                        .ToList();
+                    files.ForEach(
+                        file =>
+                        {
+                            if (!File.Exists(file))
+                            {
+                                stringBuilder.AppendLine(
+                                    $"{task.Name}{separator}{filePath}{separator}file: {file} does not exist, or no access granted");
+                            }
+                            else
+                            {
+                                localFiles.Add(file);
+                            }
+
+                            var validPath = Path.GetDirectoryName(file);
+                            if (!Directory.Exists(validPath))
+                            {
+                                stringBuilder.AppendLine(
+                                    $"{task.Name}{separator}{filePath}{separator}path: {validPath} does not exist, or no access granted");
+                            }
+                        });
+
+                    var paths = pathRegex.Matches(fileContent)
+                        .Cast<Match>()
+                        .Select(match => match.Value)
+                        .ToList();
+                    paths.ForEach(
+                        path =>
+                        {
+                            var validPath = Path.GetDirectoryName(path);
+                            if (!Directory.Exists(validPath))
+                            {
+                                stringBuilder.AppendLine(
+                                    $"{task.Name}{separator}{filePath}{separator}path: {validPath} does not exist, or no access granted");
+                            }
+                        });
+
+                    var assignments = keyValuePairRegex.Matches(fileContent)
+                        .Cast<Match>()
+                        .ToList();
+                    assignments.ForEach(
+                        match =>
+                        {
+                            var key = match.Groups[0];
+                            var value = match.Groups[1];
+
+                            if (key.Value.IndexOf("catalog", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                stringBuilder.AppendLine(
+                                    $"{task.Name}{separator}{filePath}{separator}Possible Catalog assignment: {key} = {value}");
+                            }
+
+                            if (key.Value.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                stringBuilder.AppendLine(
+                                    $"{task.Name}{separator}{filePath}{separator}Possible Source (DB) assignment: {key} = {value}");
+                            }
+                        });
+                });
+
+            AnalyzeFileForTask(localFiles, stringBuilder, task);
         }
 
         private static void AnalyzeDbJobs(Parameters parameters)
@@ -252,7 +314,7 @@ namespace JobsAnalyzer
                             {
                                 var files = fileNameRegex.Matches(step.Command).Cast<Match>().ToList();
                                 var connectionStrings =
-                                    connectionStringRegex.Matches(step.Command).Cast<Match>().ToList();
+                                    keyValuePairRegex.Matches(step.Command).Cast<Match>().ToList();
                                 files.ForEach(match => stringBuilder.Append($"{separator}{match.Value}"));
 
                                 // connectionStrings.ForEach(match => stringBuilder.Append($",{match.Value}"));
