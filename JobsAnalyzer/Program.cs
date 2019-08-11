@@ -26,7 +26,10 @@ namespace JobsAnalyzer
             @"(([a-z]|[A-Z]):(?=\\(?![\0-\37<>:""/\\|?*])|\/(?![\0-\37<>:""/\\|?*])|$)|^\\(?=[\\\/][^\0-\37<>:""/\\|?*]+)|^(?=(\\|\/)$)|^\.(?=(\\|\/)$)|^\.\.(?=(\\|\/)$)|^(?=(\\|\/)[^\0-\37<>:""/\\|?*]+)|^\.(?=(\\|\/)[^\0-\37<>:""/\\|?*]+)|^\.\.(?=(\\|\/)[^\0-\37<>:""/\\|?*]+))((\\|\/)[^\0-\37<>:""/\\|?*]+|(\\|\/)$)*()",
             RegexOptions.Multiline);
         private static readonly Regex keyValuePairRegex = new Regex(
-            @"(?<Key>[^=;]+)=(?<Val>[^;]+)",
+            @"(?<name>\S+)\s*=\s*(?<val>[^;]+?)\s*(;|$)",
+            RegexOptions.Multiline);
+        private static readonly Regex DiscardCharsRegex = new Regex(
+            @"[\n]+",
             RegexOptions.Multiline);
 
         private static async Task Main(string[] args)
@@ -232,8 +235,8 @@ namespace JobsAnalyzer
                     assignments.ForEach(
                         match =>
                         {
-                            var key = match.Groups[0].Value;
-                            var value = match.Groups[1].Value;
+                            var key = match.Groups["name"].Value.Replace("\n", string.Empty);
+                            var value = match.Groups["val"].Value.Replace("\n", string.Empty);
 
                             if (key.IndexOf("catalog", StringComparison.OrdinalIgnoreCase) >= 0)
                             {
@@ -245,6 +248,19 @@ namespace JobsAnalyzer
                             {
                                 stringBuilder.AppendLine(
                                     $"{task.Name}{separator}{filePath}{separator}Possible Server assignment: {key} = {value}");
+                            }
+
+                            if (key.IndexOf("Data Source", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                stringBuilder.AppendLine(
+                                    $"{task.Name}{separator}{filePath}{separator}Possible Data Source assignment: {key} = {value}");
+                            }
+
+                            if (key.IndexOf("Data Base", StringComparison.OrdinalIgnoreCase) >= 0
+                                || key.IndexOf("DataBase", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                stringBuilder.AppendLine(
+                                    $"{task.Name}{separator}{filePath}{separator}Possible Data Base assignment: {key} = {value}");
                             }
                         });
                 });
@@ -300,6 +316,8 @@ namespace JobsAnalyzer
                         steps.ForEach(
                             step =>
                             {
+
+
                                 var files = fileNameRegex.Matches(step.Command).Cast<Match>().ToList();
                                 var paths = pathRegex.Matches(step.Command).Cast<Match>().ToList();
                                 var connectionStrings = keyValuePairRegex.Matches(step.Command).Cast<Match>().ToList();
@@ -308,10 +326,21 @@ namespace JobsAnalyzer
                                 connectionStrings.ForEach(
                                     match =>
                                     {
-                                        if (match.Groups["Key"].Value.IndexOf("server", StringComparison.OrdinalIgnoreCase) >= 0
-                                            || match.Groups["Key"] .Value.IndexOf("catalog", StringComparison.OrdinalIgnoreCase) >= 0)
+                                        var name = match.Groups["name"];
+                                        var value = match.Groups["val"];
+                                        if (name.Value.IndexOf("server", StringComparison.OrdinalIgnoreCase) >= 0
+                                            || name.Value.IndexOf("catalog", StringComparison.OrdinalIgnoreCase) >= 0
+                                            || name.Value.IndexOf("data source", StringComparison.OrdinalIgnoreCase) >= 0
+                                            || name.Value.IndexOf("data base", StringComparison.OrdinalIgnoreCase) >= 0
+                                            || name.Value.IndexOf("database", StringComparison.OrdinalIgnoreCase) >= 0
+                                            || value.Value.IndexOf("server", StringComparison.OrdinalIgnoreCase) >= 0
+                                            || value.Value.IndexOf("catalog", StringComparison.OrdinalIgnoreCase) >= 0
+                                            || value.Value.IndexOf("database", StringComparison.OrdinalIgnoreCase) >= 0
+                                            || value.Value.IndexOf("data base", StringComparison.OrdinalIgnoreCase) >= 0
+                                            || value.Value.IndexOf("data source", StringComparison.OrdinalIgnoreCase) >= 0)
                                         {
-                                            stringBuilder.Append($",{match.Value} possible database assignment");
+                                            stringBuilder.Append(
+                                                $"{separator}{name.Value.Replace("\n", string.Empty)} = {value.Value.Replace("\n", string.Empty)} possible database assignment");
                                         }
                                     });
                             });
