@@ -329,7 +329,15 @@ namespace JobsAnalyzer
                         steps.ForEach(
                             step =>
                             {
+                                if (step.LastRunOutcome != CompletionResult.Succeeded)
+                                {
+                                    stringBuilder.Append($"{separator}error on last Step execution {step.Name}");
+                                }
 
+                                if (step.DatabaseName.IndexOf(key, StringComparison.OrdinalIgnoreCase) < 0)
+                                {
+                                    stringBuilder.Append($"{separator} step {step.Name} seems to be tied to a different database: {step.DatabaseName}");
+                                }
 
                                 var files = fileNameRegex.Matches(step.Command).Cast<Match>().ToList();
                                 var paths = pathRegex.Matches(step.Command).Cast<Match>().ToList();
