@@ -18,7 +18,7 @@ namespace JobsAnalyzer
     {
         // full file path in 2 groups
         // ((?:[\w]\:|\\|\\\\)(?:\\[\w\-\s\d\*\%\.]+\\*)+)((?:[\w\-\s\d\*\%\.]+)+(?:\.[\w\d]+)+)
-        private static readonly string separator = "-;;-";
+        private static readonly string separator = "~";
         private static readonly Regex fileNameRegex = new Regex(
             @"((?:[\w]\:|\\|\\\\)?(?:\\[\w\-\s\d\*\%\.]+)+)\\((?:[\w\-\s\d\*\%\.]+)+(?:\.[\w\d]+)+)",
             RegexOptions.Multiline);
@@ -29,7 +29,7 @@ namespace JobsAnalyzer
             @"(?<name>\S+)\s*=\s*(?<val>[^;]+?)\s*(;|$)",
             RegexOptions.Multiline);
         private static readonly Regex emailRegex = new Regex(
-            @"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b",
+            @"[\w\d._%+-]+@[\w\d.-]+\.[\w]{2,}",
             RegexOptions.Multiline);
 
         private static async Task Main(string[] args)
@@ -343,8 +343,8 @@ namespace JobsAnalyzer
                                 var paths = pathRegex.Matches(step.Command).Cast<Match>().ToList();
                                 var emails = emailRegex.Matches(step.Command).Cast<Match>().ToList();
                                 var connectionStrings = keyValuePairRegex.Matches(step.Command).Cast<Match>().ToList();
-                                files.ForEach(match => stringBuilder.Append($"{separator}{match.Value}"));
-                                paths.ForEach(match => stringBuilder.Append($"{separator}{match.Value}"));
+                                files.ForEach(match => stringBuilder.Append($"No file access on Central: {separator}{match.Value}"));
+                                paths.ForEach(match => stringBuilder.Append($"No folder access on Central: {separator}{match.Value}"));
                                 emails.ForEach(match => stringBuilder.Append($"{separator}{match.Value} hard coded email"));
                                 connectionStrings.ForEach(
                                     match =>

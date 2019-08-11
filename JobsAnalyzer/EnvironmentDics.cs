@@ -160,27 +160,36 @@ internal static class EnvironmentDics
             "EU1", new List<string>
             {
                 "ResponseTek_NONPROD_EU.cons.com",
-                "urt_eu1_RT",
-                "urt_eu1_faster",
-                "P@ssw0rd+,RT"
+                "urt_eu5_RT",
+                "urt_eu5_faster",
+                "P@ssw0rdRT+,"
+                //"urt_eu1_RT",
+                //"urt_eu1_faster",
+                //"P@ssw0rd+,RT"
             }
         },
         {
             "EU2", new List<string>
             {
                 "ResponseTek_NONPROD_EU.cons.com",
-                "urt_eu2_RT",
-                "urt_eu2_faster",
+                "urt_eu5_RT",
+                "urt_eu5_faster",
                 "P@ssw0rdRT+,"
+                //"urt_eu2_RT",
+                //"urt_eu2_faster",
+                //"P@ssw0rdRT+,"
             }
         },
         {
             "EU3", new List<string>
             {
                 "ResponseTek_NONPROD_EU.cons.com",
-                "urt_eu3_RT",
-                "urt_eu3_faster",
+                "urt_eu5_RT",
+                "urt_eu5_faster",
                 "P@ssw0rdRT+,"
+                //"urt_eu3_RT",
+                //"urt_eu3_faster",
+                //"P@ssw0rdRT+,"
             }
         },
         {
@@ -196,9 +205,12 @@ internal static class EnvironmentDics
             "NA3", new List<string>
             {
                 "ResponseTek_NONPROD_EU.cons.com",
-                "urt_na3_RT",
-                "urt_na3_faster",
+                "urt_eu5_RT",
+                "urt_eu5_faster",
                 "P@ssw0rdRT+,"
+                //"urt_na3_RT",
+                //"urt_na3_faster",
+                //"P@ssw0rdRT+,"
             }
         },
         {
@@ -214,18 +226,21 @@ internal static class EnvironmentDics
             "ZAIN", new List<string>
             {
                 "ResponseTek_NONPROD_EU.cons.com",
-                "urt_zain_RT",
-                "urt_zain_faster",
-                "P@ssw0rdRT+,"
+                 "urt_eu5_RT", //"urt_zain_RT",
+                 "urt_eu5_faster", //urt_zain_faster",
+                 "P@ssw0rdRT+," //"P@ssw0rdRT+,"
             }
         },
         {
             "SG1", new List<string>
             {
                 "ResponseTek_NONPROD_EU.cons.com",
-                "urt_sg1_RT",
-                "urt_sg1_faster",
-                "P@ssw0rd+,RT"
+                "urt_eu5_RT",
+                "urt_eu5_faster",
+                "P@ssw0rdRT+,"
+                //"urt_sg1_RT",
+                //"urt_sg1_faster",
+                //"P@ssw0rd+,RT"
             }
         },
     };
