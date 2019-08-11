@@ -28,8 +28,8 @@ namespace JobsAnalyzer
         private static readonly Regex keyValuePairRegex = new Regex(
             @"(?<name>\S+)\s*=\s*(?<val>[^;]+?)\s*(;|$)",
             RegexOptions.Multiline);
-        private static readonly Regex DiscardCharsRegex = new Regex(
-            @"[\n]+",
+        private static readonly Regex emailRegex = new Regex(
+            @"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b",
             RegexOptions.Multiline);
 
         private static async Task Main(string[] args)
@@ -231,6 +231,14 @@ namespace JobsAnalyzer
                             }
                         });
 
+                    var emails = emailRegex.Matches(fileContent).Cast<Match>().Select(match => match.Value).ToList();
+                    emails.ForEach(
+                        email =>
+                        {
+                            stringBuilder.AppendLine(
+                                $"{task.Name}{separator}{filePath}{separator}Hard coded email: {email}");
+                        });
+
                     var assignments = keyValuePairRegex.Matches(fileContent).Cast<Match>().ToList();
                     assignments.ForEach(
                         match =>
@@ -312,6 +320,11 @@ namespace JobsAnalyzer
                             stringBuilder.Append($"{separator}Job is Disabled");
                         }
 
+                        if (job.LastRunOutcome != CompletionResult.Succeeded)
+                        {
+                            stringBuilder.Append($"{separator}error on last execution");
+                        }
+
                         var steps = job.JobSteps.Cast<JobStep>().ToList();
                         steps.ForEach(
                             step =>
@@ -320,9 +333,11 @@ namespace JobsAnalyzer
 
                                 var files = fileNameRegex.Matches(step.Command).Cast<Match>().ToList();
                                 var paths = pathRegex.Matches(step.Command).Cast<Match>().ToList();
+                                var emails = emailRegex.Matches(step.Command).Cast<Match>().ToList();
                                 var connectionStrings = keyValuePairRegex.Matches(step.Command).Cast<Match>().ToList();
                                 files.ForEach(match => stringBuilder.Append($"{separator}{match.Value}"));
                                 paths.ForEach(match => stringBuilder.Append($"{separator}{match.Value}"));
+                                emails.ForEach(match => stringBuilder.Append($"{separator}{match.Value} hard coded email"));
                                 connectionStrings.ForEach(
                                     match =>
                                     {
