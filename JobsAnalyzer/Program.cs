@@ -315,36 +315,23 @@ namespace JobsAnalyzer
                     {
                         stringBuilder.Append($"{job.Name}{separator}{job.Description}");
 
-                        if (job.IsEnabled)
-                        {
-                            stringBuilder.Append($"{separator}Job is Disabled");
-                        }
-
-                        if (job.LastRunOutcome != CompletionResult.Succeeded)
-                        {
-                            stringBuilder.Append($"{separator}error on last execution");
-                        }
+                        //var scriptSb = new StringBuilder();
+                        //foreach (var scriptString in job.Script())
+                        //{
+                        //    scriptSb.Append(scriptString);
+                        //}
+                        //var script = scriptSb.ToString();
 
                         var steps = job.JobSteps.Cast<JobStep>().ToList();
                         steps.ForEach(
                             step =>
                             {
-                                if (step.LastRunOutcome != CompletionResult.Succeeded)
-                                {
-                                    stringBuilder.Append($"{separator}error on last Step execution {step.Name}");
-                                }
-
-                                if (step.DatabaseName.IndexOf(key, StringComparison.OrdinalIgnoreCase) < 0)
-                                {
-                                    stringBuilder.Append($"{separator} step {step.Name} seems to be tied to a different database: {step.DatabaseName}");
-                                }
-
                                 var files = fileNameRegex.Matches(step.Command).Cast<Match>().ToList();
                                 var paths = pathRegex.Matches(step.Command).Cast<Match>().ToList();
                                 var emails = emailRegex.Matches(step.Command).Cast<Match>().ToList();
                                 var connectionStrings = keyValuePairRegex.Matches(step.Command).Cast<Match>().ToList();
-                                files.ForEach(match => stringBuilder.Append($"No file access on Central: {separator}{match.Value}"));
-                                paths.ForEach(match => stringBuilder.Append($"No folder access on Central: {separator}{match.Value}"));
+                                files.ForEach(match => stringBuilder.Append($"{separator}No file access on Central: {match.Value}"));
+                                paths.ForEach(match => stringBuilder.Append($"{separator}No folder access on Central: {match.Value}"));
                                 emails.ForEach(match => stringBuilder.Append($"{separator}{match.Value} hard coded email"));
                                 connectionStrings.ForEach(
                                     match =>
@@ -366,7 +353,29 @@ namespace JobsAnalyzer
                                                 $"{separator}{name.Value.Replace("\n", string.Empty)} = {value.Value.Replace("\n", string.Empty)} possible database assignment");
                                         }
                                     });
+
+                                if (step.LastRunOutcome != CompletionResult.Succeeded)
+                                {
+                                    stringBuilder.Append($"{separator}error on last Step execution {step.Name}");
+                                }
+
+                                if (step.DatabaseName.IndexOf(key, StringComparison.OrdinalIgnoreCase) < 0)
+                                {
+                                    stringBuilder.Append(
+                                        $"{separator} step {step.Name} seems to be tied to a different database: {step.DatabaseName}");
+                                }
                             });
+
+                        if (job.IsEnabled)
+                        {
+                            stringBuilder.Append($"{separator}Job is Disabled");
+                        }
+
+                        if (job.LastRunOutcome != CompletionResult.Succeeded)
+                        {
+                            stringBuilder.Append($"{separator}error on last execution");
+                        }
+
                         stringBuilder.AppendLine();
                     });
 
