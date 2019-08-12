@@ -142,7 +142,7 @@ namespace JobsAnalyzer
                         {
                             if (!File.Exists(action.Path))
                             {
-                                stringBuilder.Append($"{separator}{action.Path} does not exist");
+                                stringBuilder.Append($"{separator}{action.Path} does not exist or no access granted");
                             }
                             else
                             {
